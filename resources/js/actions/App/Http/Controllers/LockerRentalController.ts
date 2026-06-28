@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\LockerRentalController::createOrder
-* @see app/Http/Controllers/LockerRentalController.php:18
+* @see app/Http/Controllers/LockerRentalController.php:19
 * @route '/api/create-order'
 */
 export const createOrder = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ createOrder.definition = {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::createOrder
-* @see app/Http/Controllers/LockerRentalController.php:18
+* @see app/Http/Controllers/LockerRentalController.php:19
 * @route '/api/create-order'
 */
 createOrder.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ createOrder.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::createOrder
-* @see app/Http/Controllers/LockerRentalController.php:18
+* @see app/Http/Controllers/LockerRentalController.php:19
 * @route '/api/create-order'
 */
 createOrder.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ createOrder.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::createOrder
-* @see app/Http/Controllers/LockerRentalController.php:18
+* @see app/Http/Controllers/LockerRentalController.php:19
 * @route '/api/create-order'
 */
 const createOrderForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const createOrderForm = (options?: RouteQueryOptions): RouteFormDefinition<'post
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::createOrder
-* @see app/Http/Controllers/LockerRentalController.php:18
+* @see app/Http/Controllers/LockerRentalController.php:19
 * @route '/api/create-order'
 */
 createOrderForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -57,7 +57,7 @@ createOrder.form = createOrderForm
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:293
+* @see app/Http/Controllers/LockerRentalController.php:294
 * @route '/api/pickup/{orderId}'
 */
 export const getPickupCode = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -72,7 +72,7 @@ getPickupCode.definition = {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:293
+* @see app/Http/Controllers/LockerRentalController.php:294
 * @route '/api/pickup/{orderId}'
 */
 getPickupCode.url = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -99,7 +99,7 @@ getPickupCode.url = (args: { orderId: string | number } | [orderId: string | num
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:293
+* @see app/Http/Controllers/LockerRentalController.php:294
 * @route '/api/pickup/{orderId}'
 */
 getPickupCode.get = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -109,7 +109,7 @@ getPickupCode.get = (args: { orderId: string | number } | [orderId: string | num
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:293
+* @see app/Http/Controllers/LockerRentalController.php:294
 * @route '/api/pickup/{orderId}'
 */
 getPickupCode.head = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -119,7 +119,7 @@ getPickupCode.head = (args: { orderId: string | number } | [orderId: string | nu
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:293
+* @see app/Http/Controllers/LockerRentalController.php:294
 * @route '/api/pickup/{orderId}'
 */
 const getPickupCodeForm = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -129,7 +129,7 @@ const getPickupCodeForm = (args: { orderId: string | number } | [orderId: string
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:293
+* @see app/Http/Controllers/LockerRentalController.php:294
 * @route '/api/pickup/{orderId}'
 */
 getPickupCodeForm.get = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -139,7 +139,7 @@ getPickupCodeForm.get = (args: { orderId: string | number } | [orderId: string |
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:293
+* @see app/Http/Controllers/LockerRentalController.php:294
 * @route '/api/pickup/{orderId}'
 */
 getPickupCodeForm.head = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -156,7 +156,7 @@ getPickupCode.form = getPickupCodeForm
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:178
+* @see app/Http/Controllers/LockerRentalController.php:179
 * @route '/api/webhook'
 */
 export const handleNotification = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -171,7 +171,7 @@ handleNotification.definition = {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:178
+* @see app/Http/Controllers/LockerRentalController.php:179
 * @route '/api/webhook'
 */
 handleNotification.url = (options?: RouteQueryOptions) => {
@@ -180,7 +180,7 @@ handleNotification.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:178
+* @see app/Http/Controllers/LockerRentalController.php:179
 * @route '/api/webhook'
 */
 handleNotification.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -190,7 +190,7 @@ handleNotification.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:178
+* @see app/Http/Controllers/LockerRentalController.php:179
 * @route '/api/webhook'
 */
 const handleNotificationForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -200,7 +200,7 @@ const handleNotificationForm = (options?: RouteQueryOptions): RouteFormDefinitio
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:178
+* @see app/Http/Controllers/LockerRentalController.php:179
 * @route '/api/webhook'
 */
 handleNotificationForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -212,7 +212,7 @@ handleNotification.form = handleNotificationForm
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::tapCard
-* @see app/Http/Controllers/LockerRentalController.php:429
+* @see app/Http/Controllers/LockerRentalController.php:430
 * @route '/api/arduino/tap-card'
 */
 export const tapCard = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -227,7 +227,7 @@ tapCard.definition = {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::tapCard
-* @see app/Http/Controllers/LockerRentalController.php:429
+* @see app/Http/Controllers/LockerRentalController.php:430
 * @route '/api/arduino/tap-card'
 */
 tapCard.url = (options?: RouteQueryOptions) => {
@@ -236,7 +236,7 @@ tapCard.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::tapCard
-* @see app/Http/Controllers/LockerRentalController.php:429
+* @see app/Http/Controllers/LockerRentalController.php:430
 * @route '/api/arduino/tap-card'
 */
 tapCard.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -246,7 +246,7 @@ tapCard.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::tapCard
-* @see app/Http/Controllers/LockerRentalController.php:429
+* @see app/Http/Controllers/LockerRentalController.php:430
 * @route '/api/arduino/tap-card'
 */
 const tapCardForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -256,7 +256,7 @@ const tapCardForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::tapCard
-* @see app/Http/Controllers/LockerRentalController.php:429
+* @see app/Http/Controllers/LockerRentalController.php:430
 * @route '/api/arduino/tap-card'
 */
 tapCardForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

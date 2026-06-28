@@ -4,6 +4,14 @@ namespace App\Models;
 
 use MongoDB\Laravel\Eloquent\Model;
 
+/**
+ * @property string $box_id
+ * @property int $box_number
+ * @property string $size_type
+ * @property bool $is_available
+ * @property string $door_status
+ * @property float $price_per_hour
+ */
 class LockerBox extends Model
 {
     protected $connection = 'mongodb';

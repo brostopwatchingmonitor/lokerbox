@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LockerStation;
 use App\Models\Transaction;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -15,7 +16,7 @@ class LockerRentalController extends Controller
     /**
      * Membuat order sewa loker dan mengambil token Midtrans Snap.
      */
-    public function createOrder(Request $request)
+    public function createOrder(Request $request): JsonResponse
     {
         $request->validate([
             'lockerSize' => 'required|string|in:Small,Large',
@@ -99,9 +100,9 @@ class LockerRentalController extends Controller
         }
 
         // 2. Hubungi API Midtrans Sandbox
-        $serverKey = env('MIDTRANS_SERVER_KEY', '');
-        $clientKey = env('MIDTRANS_CLIENT_KEY', '');
-        $isProduction = filter_var(env('MIDTRANS_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN);
+        $serverKey = config('services.midtrans.server_key');
+        $clientKey = config('services.midtrans.client_key');
+        $isProduction = filter_var(config('services.midtrans.is_production'), FILTER_VALIDATE_BOOLEAN);
 
         // FITUR FALLBACK / MOCK MODE:
         if (empty($serverKey) || $serverKey === 'YOUR_MIDTRANS_SERVER_KEY') {
@@ -175,7 +176,7 @@ class LockerRentalController extends Controller
     /**
      * Menerima notifikasi webhook/callback dari Midtrans secara asinkron.
      */
-    public function handleNotification(Request $request)
+    public function handleNotification(Request $request): JsonResponse
     {
         Log::info('Midtrans Webhook Callback Triggered.');
 
@@ -193,7 +194,7 @@ class LockerRentalController extends Controller
         }
 
         // 1. Verifikasi Keamanan Signature Key
-        $serverKey = env('MIDTRANS_SERVER_KEY', '');
+        $serverKey = config('services.midtrans.server_key');
         $localSignature = hash('sha512', $orderId.$statusCode.$grossAmount.$serverKey);
 
         if ($localSignature !== $signatureKey) {
@@ -290,7 +291,7 @@ class LockerRentalController extends Controller
     /**
      * Mengambil kode pengambilan loker (pickup code) setelah pembayaran berhasil.
      */
-    public function getPickupCode($orderId)
+    public function getPickupCode(string $orderId): JsonResponse
     {
         $transaction = Transaction::where('payments.gateway_ref', $orderId)->first();
 
@@ -305,11 +306,11 @@ class LockerRentalController extends Controller
         }
 
         if ($transaction->status === 'PENDING') {
-            $serverKey = env('MIDTRANS_SERVER_KEY', '');
+            $serverKey = config('services.midtrans.server_key');
             if (! empty($serverKey) && $serverKey !== 'YOUR_MIDTRANS_SERVER_KEY') {
                 try {
                     $authHeader = base64_encode($serverKey.':');
-                    $baseUrl = filter_var(env('MIDTRANS_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN)
+                    $baseUrl = filter_var(config('services.midtrans.is_production'), FILTER_VALIDATE_BOOLEAN)
                         ? "https://api.midtrans.com/v2/{$orderId}/status"
                         : "https://api.sandbox.midtrans.com/v2/{$orderId}/status";
 
@@ -381,7 +382,7 @@ class LockerRentalController extends Controller
     /**
      * Helper untuk mengubah status ketersediaan locker box di database secara aman.
      */
-    private function updateBoxAvailability($stationId, $boxId, $isAvailable)
+    private function updateBoxAvailability(mixed $stationId, mixed $boxId, bool $isAvailable): void
     {
         // Konversi stationId ke string jika berupa array (seperti ['$oid' => '...']) atau objek ObjectId
         $stationIdStr = null;
@@ -401,7 +402,7 @@ class LockerRentalController extends Controller
 
         try {
             $station = LockerStation::find($stationIdStr);
-            if ($station) {
+            if ($station instanceof LockerStation) {
                 $boxes = $station->boxes;
                 $updated = false;
                 foreach ($boxes as $box) {
@@ -426,7 +427,7 @@ class LockerRentalController extends Controller
     /**
      * Menerima tap kartu RFID dari board Arduino fisik untuk otentikasi buka kunci solenoid.
      */
-    public function tapCard(Request $request)
+    public function tapCard(Request $request): JsonResponse
     {
         $request->validate([
             'uid' => 'required|string',

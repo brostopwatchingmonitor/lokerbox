@@ -13,7 +13,6 @@ use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use MongoDB\Laravel\Auth\User as Authenticatable;
-use MongoDB\Laravel\Relations\HasMany;
 
 /**
  * @property string $_id
@@ -25,7 +24,7 @@ use MongoDB\Laravel\Relations\HasMany;
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
- * @property array|null $security
+ * @property array<string, mixed>|null $security
  * @property float|null $wallet_balance
  * @property string|null $fcm_token
  * @property Carbon|null $created_at
@@ -40,7 +39,7 @@ class User extends Authenticatable implements PasskeyUser
 
     protected $connection = 'mongodb';
 
-    protected $collection = 'users';
+    protected string $collection = 'users';
 
     /**
      * Get the attributes that should be cast.
@@ -56,13 +55,5 @@ class User extends Authenticatable implements PasskeyUser
             'wallet_balance' => 'decimal:2',
             'security' => 'array',
         ];
-    }
-
-    /**
-     * Relasi ke Passkeys (Referencing)
-     */
-    public function passkeys(): HasMany
-    {
-        return $this->hasMany(Passkey::class);
     }
 }

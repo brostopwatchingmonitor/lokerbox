@@ -2,30 +2,27 @@
 
 namespace App\Models;
 
-use MongoDB\Laravel\Eloquent\Model;
-use MongoDB\Laravel\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+use Laravel\Passkeys\Passkey as BasePasskey;
+use MongoDB\Laravel\Eloquent\DocumentModel;
 
-class Passkey extends Model
+/**
+ * @property string $_id
+ * @property string $id
+ * @property string $user_id
+ * @property string $name
+ * @property string $credential_id
+ * @property array<string, mixed> $credential
+ * @property Carbon|null $last_used_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read string|null $authenticator
+ */
+class Passkey extends BasePasskey
 {
+    use DocumentModel;
+
     protected $connection = 'mongodb';
 
-    protected $collection = 'passkeys';
-
-    protected $fillable = [
-        'user_id',
-        'name',
-        'credential_id',
-        'credential',
-        'last_used_at',
-    ];
-
-    protected $casts = [
-        'credential' => 'array',
-        'last_used_at' => 'datetime',
-    ];
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
+    protected string $collection = 'passkeys';
 }
