@@ -8,6 +8,7 @@ use MongoDB\Laravel\Relations\BelongsTo;
 class Passkey extends Model
 {
     protected $connection = 'mongodb';
+
     protected $collection = 'passkeys';
 
     protected $fillable = [

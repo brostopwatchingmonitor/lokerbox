@@ -2,10 +2,10 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\LockerStation;
 use App\Models\Transaction;
+use App\Models\User;
+use Tests\TestCase;
 
 class MongoDBConnectionTest extends TestCase
 {
@@ -14,15 +14,15 @@ class MongoDBConnectionTest extends TestCase
      */
     public function test_models_use_mongodb_connection(): void
     {
-        $user = new User();
+        $user = new User;
         $this->assertEquals('mongodb', $user->getConnectionName());
         $this->assertEquals('users', $user->getTable());
 
-        $station = new LockerStation();
+        $station = new LockerStation;
         $this->assertEquals('mongodb', $station->getConnectionName());
         $this->assertEquals('locker_stations', $station->getTable());
 
-        $transaction = new Transaction();
+        $transaction = new Transaction;
         $this->assertEquals('mongodb', $transaction->getConnectionName());
         $this->assertEquals('transactions', $transaction->getTable());
     }

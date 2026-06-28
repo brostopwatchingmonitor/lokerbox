@@ -8,6 +8,7 @@ use MongoDB\Laravel\Relations\EmbedsMany;
 class LockerStation extends Model
 {
     protected $connection = 'mongodb';
+
     protected $collection = 'locker_stations';
 
     protected $fillable = [

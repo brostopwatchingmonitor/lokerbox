@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\LockerStation;
 use App\Models\Transaction;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use MongoDB\BSON\ObjectId;
 
@@ -23,11 +24,11 @@ class LockerRentalController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['success' => false, 'error' => 'User not authenticated'], 401);
         }
 
-        $orderId = 'LKR-' . time() . '-' . rand(100, 999);
+        $orderId = 'LKR-'.time().'-'.rand(100, 999);
         $totalPrice = $request->price * $request->duration;
 
         // 1. Simpan Transaksi Baru ke MongoDB
@@ -37,7 +38,7 @@ class LockerRentalController extends Controller
             $boxId = new ObjectId('6647a123f1b4c3d2e1a8b003'); // fallback to Small
 
             try {
-                $station = \App\Models\LockerStation::find($stationId);
+                $station = LockerStation::find($stationId);
                 if ($station) {
                     $assignedBox = null;
                     foreach ($station->boxes as $box) {
@@ -51,7 +52,7 @@ class LockerRentalController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                Log::warning("Could not find dynamic box, falling back to default box: " . $e->getMessage());
+                Log::warning('Could not find dynamic box, falling back to default box: '.$e->getMessage());
             }
 
             $transaction = Transaction::create([
@@ -66,9 +67,9 @@ class LockerRentalController extends Controller
                 'transaction_type' => 'SELF_USE',
                 'status' => 'PENDING',
                 'fees' => [
-                    'base_fee' => (float)$request->price,
+                    'base_fee' => (float) $request->price,
                     'penalty_fee' => 0.00,
-                    'total_fee' => (float)$totalPrice,
+                    'total_fee' => (float) $totalPrice,
                 ],
                 'timestamps' => [
                     'created_at' => now(),
@@ -80,19 +81,20 @@ class LockerRentalController extends Controller
 
             // Tambahkan data pembayaran awal (pending)
             $transaction->payments()->create([
-                'payment_id' => new ObjectId(),
+                'payment_id' => new ObjectId,
                 'payment_method' => 'MIDTRANS',
                 'payment_status' => 'PENDING',
-                'amount' => (float)$totalPrice,
+                'amount' => (float) $totalPrice,
                 'gateway_ref' => $orderId,
                 'paid_at' => null,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('MongoDB Error (Create Order): ' . $e->getMessage());
+            Log::error('MongoDB Error (Create Order): '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'error' => 'Gagal menyimpan transaksi ke database: ' . $e->getMessage()
+                'error' => 'Gagal menyimpan transaksi ke database: '.$e->getMessage(),
             ], 500);
         }
 
@@ -103,23 +105,24 @@ class LockerRentalController extends Controller
 
         // FITUR FALLBACK / MOCK MODE:
         if (empty($serverKey) || $serverKey === 'YOUR_MIDTRANS_SERVER_KEY') {
-            Log::info('Midtrans Server Key is empty. Running in MOCK Mode for Order: ' . $orderId);
+            Log::info('Midtrans Server Key is empty. Running in MOCK Mode for Order: '.$orderId);
+
             return response()->json([
                 'success' => true,
-                'token' => 'mock-snap-token-' . uniqid(),
+                'token' => 'mock-snap-token-'.uniqid(),
                 'orderId' => $orderId,
-                'isMock' => true
+                'isMock' => true,
             ]);
         }
 
         try {
-            $authHeader = base64_encode($serverKey . ':');
+            $authHeader = base64_encode($serverKey.':');
             $baseUrl = $isProduction
                 ? 'https://app.midtrans.com/snap/v1/transactions'
                 : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
 
             $response = Http::withHeaders([
-                'Authorization' => 'Basic ' . $authHeader,
+                'Authorization' => 'Basic '.$authHeader,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ])->post($baseUrl, [
@@ -137,9 +140,9 @@ class LockerRentalController extends Controller
                         'id' => $request->lockerSize,
                         'price' => $request->price,
                         'quantity' => $request->duration,
-                        'name' => 'Sewa Loker ' . $request->lockerSize . ' (' . $request->duration . ' Jam)',
-                    ]
-                ]
+                        'name' => 'Sewa Loker '.$request->lockerSize.' ('.$request->duration.' Jam)',
+                    ],
+                ],
             ]);
 
             $result = $response->json();
@@ -151,18 +154,20 @@ class LockerRentalController extends Controller
                     'orderId' => $orderId,
                 ]);
             } else {
-                Log::error('Midtrans API Request Error: ' . json_encode($result));
+                Log::error('Midtrans API Request Error: '.json_encode($result));
+
                 return response()->json([
                     'success' => false,
-                    'error' => 'Midtrans Error: ' . ($result['error_messages'][0] ?? 'Gagal membuat transaksi')
+                    'error' => 'Midtrans Error: '.($result['error_messages'][0] ?? 'Gagal membuat transaksi'),
                 ], 400);
             }
 
         } catch (\Exception $e) {
-            Log::error('Connection Error (Midtrans): ' . $e->getMessage());
+            Log::error('Connection Error (Midtrans): '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'error' => 'Kesalahan koneksi ke Midtrans: ' . $e->getMessage()
+                'error' => 'Kesalahan koneksi ke Midtrans: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -183,16 +188,17 @@ class LockerRentalController extends Controller
         $paymentType = $payload['payment_type'] ?? null;
         $fraudStatus = $payload['fraud_status'] ?? null;
 
-        if (!$orderId || !$statusCode || !$grossAmount || !$signatureKey) {
+        if (! $orderId || ! $statusCode || ! $grossAmount || ! $signatureKey) {
             return response()->json(['success' => false, 'error' => 'Invalid payload parameters'], 400);
         }
 
         // 1. Verifikasi Keamanan Signature Key
         $serverKey = env('MIDTRANS_SERVER_KEY', '');
-        $localSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+        $localSignature = hash('sha512', $orderId.$statusCode.$grossAmount.$serverKey);
 
         if ($localSignature !== $signatureKey) {
             Log::warning('Midtrans Webhook: Invalid Signature Key. Potential tampering detected.');
+
             return response()->json(['success' => false, 'error' => 'Invalid signature key'], 403);
         }
 
@@ -201,8 +207,9 @@ class LockerRentalController extends Controller
         // 2. Temukan Transaksi di MongoDB
         $transaction = Transaction::where('payments.gateway_ref', $orderId)->first();
 
-        if (!$transaction) {
+        if (! $transaction) {
             Log::error("Transaction not found for Order ID: {$orderId}");
+
             return response()->json(['success' => false, 'error' => 'Transaction not found'], 404);
         }
 
@@ -263,7 +270,7 @@ class LockerRentalController extends Controller
 
         // 6. Catat aktivitas dalam sub-dokumen activity_logs
         $transaction->activityLogs()->create([
-            'log_id' => new ObjectId(),
+            'log_id' => new ObjectId,
             'actor_id' => $transaction->parties['owner_id'],
             'event_name' => $isPaid ? 'PAYMENT_SUCCESS' : 'PAYMENT_STATUS_UPDATE',
             'description' => "Status pembayaran diperbarui menjadi: {$paymentStatus}. Status Loker: {$lokerStatus}",
@@ -276,6 +283,7 @@ class LockerRentalController extends Controller
         ]);
 
         Log::info("Transaction {$orderId} successfully processed and updated in MongoDB.");
+
         return response()->json(['success' => true]);
     }
 
@@ -286,26 +294,26 @@ class LockerRentalController extends Controller
     {
         $transaction = Transaction::where('payments.gateway_ref', $orderId)->first();
 
-        if (!$transaction) {
+        if (! $transaction) {
             // MOCK: Jika database tidak menyala/ditemukan, kembalikan kode dummy agar user tetap bisa demo
             return response()->json([
                 'success' => true,
-                'pickup_code' => 'LCK-' . rand(1000, 9999),
+                'pickup_code' => 'LCK-'.rand(1000, 9999),
                 'orderId' => $orderId,
-                'status' => 'SUCCESS'
+                'status' => 'SUCCESS',
             ]);
         }
 
         if ($transaction->status === 'PENDING') {
             $serverKey = env('MIDTRANS_SERVER_KEY', '');
-            if (!empty($serverKey) && $serverKey !== 'YOUR_MIDTRANS_SERVER_KEY') {
+            if (! empty($serverKey) && $serverKey !== 'YOUR_MIDTRANS_SERVER_KEY') {
                 try {
-                    $authHeader = base64_encode($serverKey . ':');
+                    $authHeader = base64_encode($serverKey.':');
                     $baseUrl = filter_var(env('MIDTRANS_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN)
                         ? "https://api.midtrans.com/v2/{$orderId}/status"
                         : "https://api.sandbox.midtrans.com/v2/{$orderId}/status";
 
-                    $statusResponse = Http::withHeaders(['Authorization' => 'Basic ' . $authHeader])->get($baseUrl);
+                    $statusResponse = Http::withHeaders(['Authorization' => 'Basic '.$authHeader])->get($baseUrl);
                     $statusResult = $statusResponse->json();
 
                     if ($statusResponse->successful() && isset($statusResult['transaction_status'])) {
@@ -326,13 +334,13 @@ class LockerRentalController extends Controller
                             if ($payment) {
                                 $payment->update([
                                     'payment_status' => 'SUCCESS',
-                                    'paid_at' => now()
+                                    'paid_at' => now(),
                                 ]);
                             }
                         }
                     }
                 } catch (\Exception $e) {
-                    Log::error('Synchronous check failed: ' . $e->getMessage());
+                    Log::error('Synchronous check failed: '.$e->getMessage());
                 }
             } else {
                 // MOCK MODE: transition to ACTIVE directly
@@ -351,21 +359,22 @@ class LockerRentalController extends Controller
                 if ($payment) {
                     $payment->update([
                         'payment_status' => 'SUCCESS',
-                        'paid_at' => now()
+                        'paid_at' => now(),
                     ]);
                 }
             }
         }
 
-        $pickupCode = 'LCK-' . rand(1000, 9999);
+        $pickupCode = 'LCK-'.rand(1000, 9999);
 
         // Jika transaksi disetujui, return kode pickup loker
         $status = $transaction->status;
+
         return response()->json([
             'success' => true,
             'pickup_code' => $pickupCode,
             'orderId' => $orderId,
-            'status' => $status
+            'status' => $status,
         ]);
     }
 
@@ -377,40 +386,40 @@ class LockerRentalController extends Controller
         // Konversi stationId ke string jika berupa array (seperti ['$oid' => '...']) atau objek ObjectId
         $stationIdStr = null;
         if (is_array($stationId)) {
-            $stationIdStr = $stationId['$oid'] ?? (string)($stationId[0] ?? '');
+            $stationIdStr = $stationId['$oid'] ?? (string) ($stationId[0] ?? '');
         } else {
-            $stationIdStr = (string)$stationId;
+            $stationIdStr = (string) $stationId;
         }
 
         // Konversi boxId ke string jika berupa array (seperti ['$oid' => '...']) atau objek ObjectId
         $boxIdStr = null;
         if (is_array($boxId)) {
-            $boxIdStr = $boxId['$oid'] ?? (string)($boxId[0] ?? '');
+            $boxIdStr = $boxId['$oid'] ?? (string) ($boxId[0] ?? '');
         } else {
-            $boxIdStr = (string)$boxId;
+            $boxIdStr = (string) $boxId;
         }
 
         try {
-            $station = \App\Models\LockerStation::find($stationIdStr);
+            $station = LockerStation::find($stationIdStr);
             if ($station) {
                 $boxes = $station->boxes;
                 $updated = false;
                 foreach ($boxes as $box) {
                     if ($box->box_id == $boxIdStr) {
-                        $box->is_available = (bool)$isAvailable;
+                        $box->is_available = (bool) $isAvailable;
                         $updated = true;
                     }
                 }
                 if ($updated) {
                     $station->boxes = $boxes;
                     $station->save();
-                    Log::info("Box {$boxIdStr} availability set to " . ($isAvailable ? 'true' : 'false'));
+                    Log::info("Box {$boxIdStr} availability set to ".($isAvailable ? 'true' : 'false'));
                 }
             } else {
                 Log::warning("LockerStation {$stationIdStr} not found for updating box availability.");
             }
         } catch (\Exception $e) {
-            Log::error("Failed to update box availability: " . $e->getMessage());
+            Log::error('Failed to update box availability: '.$e->getMessage());
         }
     }
 
@@ -437,27 +446,29 @@ class LockerRentalController extends Controller
             ->first();
 
         // MOCK/DEMO MODE: Jika data transaksi tidak ditemukan, kita izinkan kartu UID test apa pun (seperti '1A2B3C4D') agar demo hardware tetap berjalan
-        if (!$transaction) {
+        if (! $transaction) {
             if ($cardUid === '1A2B3C4D' || $cardUid === 'TESTCARD123') {
                 Log::info("Mock RFID Accept: Card {$cardUid} verified as test card.");
+
                 return response()->json([
                     'success' => true,
                     'unlock' => true,
-                    'message' => 'Loker dibuka (Mock Mode)'
+                    'message' => 'Loker dibuka (Mock Mode)',
                 ]);
             }
 
             Log::warning("Access Denied: No active transaction found for RFID UID {$cardUid}");
+
             return response()->json([
                 'success' => true,
                 'unlock' => false,
-                'message' => 'Akses ditolak. Kartu tidak terdaftar.'
+                'message' => 'Akses ditolak. Kartu tidak terdaftar.',
             ]);
         }
 
         // Tulis log aktivitas sensor LDR (intensitas cahaya) dan status solenoid ke activity_logs MongoDB
         $transaction->activityLogs()->create([
-            'log_id' => new ObjectId(),
+            'log_id' => new ObjectId,
             'actor_id' => $transaction->parties['owner_id'],
             'event_name' => 'BOX_OPENED',
             'description' => "Loker berhasil dibuka via tap kartu RFID. Sensor LDR: {$ldrValue} (terang/gelap).",
@@ -474,7 +485,7 @@ class LockerRentalController extends Controller
         return response()->json([
             'success' => true,
             'unlock' => true,
-            'message' => 'Akses disetujui. Solenoid terbuka.'
+            'message' => 'Akses disetujui. Solenoid terbuka.',
         ]);
     }
 }

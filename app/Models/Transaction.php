@@ -9,6 +9,7 @@ use MongoDB\Laravel\Relations\EmbedsMany;
 class Transaction extends Model
 {
     protected $connection = 'mongodb';
+
     protected $collection = 'transactions';
 
     protected $fillable = [

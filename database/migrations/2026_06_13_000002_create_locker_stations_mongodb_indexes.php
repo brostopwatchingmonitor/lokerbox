@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use MongoDB\Laravel\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use MongoDB\Laravel\Schema\Blueprint;
 
 return new class extends Migration
 {
@@ -21,7 +21,7 @@ return new class extends Migration
             $collection->index([
                 'connectivity_status' => 1,
                 'boxes.size_type' => 1,
-                'boxes.is_available' => 1
+                'boxes.is_available' => 1,
             ], 'station_box_availability_index');
         });
     }
