@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'api/webhook',
+            'api/arduino/tap-card',
         ]);
 
         $middleware->web(append: [

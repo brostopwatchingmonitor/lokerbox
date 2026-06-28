@@ -101,8 +101,7 @@ class LockerRentalController extends Controller
         $clientKey = env('MIDTRANS_CLIENT_KEY', '');
         $isProduction = filter_var(env('MIDTRANS_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN);
 
-        // FITUR FALLBACK / MOCK MODE: 
-        // Jika Server Key tidak di-set di file .env, gunakan simulasi token dummy
+        // FITUR FALLBACK / MOCK MODE:
         if (empty($serverKey) || $serverKey === 'YOUR_MIDTRANS_SERVER_KEY') {
             Log::info('Midtrans Server Key is empty. Running in MOCK Mode for Order: ' . $orderId);
             return response()->json([
@@ -115,8 +114,8 @@ class LockerRentalController extends Controller
 
         try {
             $authHeader = base64_encode($serverKey . ':');
-            $baseUrl = $isProduction 
-                ? 'https://app.midtrans.com/snap/v1/transactions' 
+            $baseUrl = $isProduction
+                ? 'https://app.midtrans.com/snap/v1/transactions'
                 : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
 
             $response = Http::withHeaders([
@@ -238,7 +237,6 @@ class LockerRentalController extends Controller
             'status' => $lokerStatus,
         ];
 
-        // Jika sukses bayar, atur waktu aktif mulai sewa loker
         if ($isPaid) {
             $durationHours = 2; // Default fallback durasi sewa
             $transactionUpdate['timestamps.started_at'] = now();
@@ -286,7 +284,6 @@ class LockerRentalController extends Controller
      */
     public function getPickupCode($orderId)
     {
-        // Temukan transaksi berdasarkan gateway_ref (yang kita set sebagai orderId)
         $transaction = Transaction::where('payments.gateway_ref', $orderId)->first();
 
         if (!$transaction) {
@@ -299,8 +296,6 @@ class LockerRentalController extends Controller
             ]);
         }
 
-        // Jika transaksi masih pending di serverless (misal webhook belum masuk tapi client sudah redirect),
-        // lakukan double-check ke server Midtrans secara synchronous untuk kelancaran UX
         if ($transaction->status === 'PENDING') {
             $serverKey = env('MIDTRANS_SERVER_KEY', '');
             if (!empty($serverKey) && $serverKey !== 'YOUR_MIDTRANS_SERVER_KEY') {
@@ -316,7 +311,6 @@ class LockerRentalController extends Controller
                     if ($statusResponse->successful() && isset($statusResult['transaction_status'])) {
                         $txStatus = $statusResult['transaction_status'];
                         if (in_array($txStatus, ['settlement', 'capture'])) {
-                            // Update manual karena terbukti sukses di server Midtrans
                             $transaction->update([
                                 'status' => 'ACTIVE',
                                 'timestamps.started_at' => now(),
@@ -418,5 +412,69 @@ class LockerRentalController extends Controller
         } catch (\Exception $e) {
             Log::error("Failed to update box availability: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Menerima tap kartu RFID dari board Arduino fisik untuk otentikasi buka kunci solenoid.
+     */
+    public function tapCard(Request $request)
+    {
+        $request->validate([
+            'uid' => 'required|string',
+            'ldr_value' => 'required|integer',
+        ]);
+
+        $cardUid = strtoupper($request->uid);
+        $ldrValue = $request->ldr_value;
+
+        Log::info("Arduino Tap RFID: UID [{$cardUid}], LDR [{$ldrValue}]");
+
+        // Cari transaksi sewa loker aktif (status = ACTIVE)
+        // Kita juga mencocokkan UID kartu yang terdaftar pada transaksi tersebut
+        // Di sini kita mencocokkan jika properti metadata 'card_uid' pada transaksi bernilai sama
+        $transaction = Transaction::where('status', 'ACTIVE')
+            ->where('card_uid', $cardUid)
+            ->first();
+
+        // MOCK/DEMO MODE: Jika data transaksi tidak ditemukan, kita izinkan kartu UID test apa pun (seperti '1A2B3C4D') agar demo hardware tetap berjalan
+        if (!$transaction) {
+            if ($cardUid === '1A2B3C4D' || $cardUid === 'TESTCARD123') {
+                Log::info("Mock RFID Accept: Card {$cardUid} verified as test card.");
+                return response()->json([
+                    'success' => true,
+                    'unlock' => true,
+                    'message' => 'Loker dibuka (Mock Mode)'
+                ]);
+            }
+
+            Log::warning("Access Denied: No active transaction found for RFID UID {$cardUid}");
+            return response()->json([
+                'success' => true,
+                'unlock' => false,
+                'message' => 'Akses ditolak. Kartu tidak terdaftar.'
+            ]);
+        }
+
+        // Tulis log aktivitas sensor LDR (intensitas cahaya) dan status solenoid ke activity_logs MongoDB
+        $transaction->activityLogs()->create([
+            'log_id' => new ObjectId(),
+            'actor_id' => $transaction->parties['owner_id'],
+            'event_name' => 'BOX_OPENED',
+            'description' => "Loker berhasil dibuka via tap kartu RFID. Sensor LDR: {$ldrValue} (terang/gelap).",
+            'metadata_iot' => [
+                'rfid_uid' => $cardUid,
+                'sensor_ldr_raw' => $ldrValue,
+                'box_opened_status' => true,
+            ],
+            'logged_at' => now(),
+        ]);
+
+        Log::info("Access Approved: Solenoid unlocked for transaction ID: {$transaction->_id}");
+
+        return response()->json([
+            'success' => true,
+            'unlock' => true,
+            'message' => 'Akses disetujui. Solenoid terbuka.'
+        ]);
     }
 }

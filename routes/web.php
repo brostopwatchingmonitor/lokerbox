@@ -15,4 +15,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Callback Webhook Notifikasi Midtrans (Publik & CSRF dikecualikan di bootstrap/app.php)
 Route::post('/api/webhook', [\App\Http\Controllers\LockerRentalController::class, 'handleNotification'])->name('locker.payment-callback');
 
+// Endpoint Tap Kartu RFID Fisik dari Arduino (Publik & CSRF dikecualikan di bootstrap/app.php)
+Route::post('/api/arduino/tap-card', [\App\Http\Controllers\LockerRentalController::class, 'tapCard'])->name('locker.arduino-tap');
+
 require __DIR__.'/settings.php';
