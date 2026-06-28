@@ -32,11 +32,32 @@ class LockerRentalController extends Controller
 
         // 1. Simpan Transaksi Baru ke MongoDB
         try {
+            // Find available locker box of requested size, fallback to hardcoded test values if not found/seeded
+            $stationId = new ObjectId('6647a123f1b4c3d2e1a8b002');
+            $boxId = new ObjectId('6647a123f1b4c3d2e1a8b003'); // fallback to Small
+
+            try {
+                $station = \App\Models\LockerStation::find($stationId);
+                if ($station) {
+                    $assignedBox = null;
+                    foreach ($station->boxes as $box) {
+                        if ($box->size_type === $request->lockerSize && $box->is_available) {
+                            $assignedBox = $box;
+                            break;
+                        }
+                    }
+                    if ($assignedBox) {
+                        $boxId = new ObjectId($assignedBox->box_id);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning("Could not find dynamic box, falling back to default box: " . $e->getMessage());
+            }
+
             $transaction = Transaction::create([
                 'box_reference' => [
-                    // Menghubungkan ke ID stasiun loker tiruan
-                    'station_id' => new ObjectId('6647a123f1b4c3d2e1a8b002'),
-                    'box_id' => new ObjectId('6647a123f1b4c3d2e1a8b003'),
+                    'station_id' => $stationId,
+                    'box_id' => $boxId,
                 ],
                 'parties' => [
                     'owner_id' => new ObjectId($user->_id),
@@ -222,6 +243,13 @@ class LockerRentalController extends Controller
             $durationHours = 2; // Default fallback durasi sewa
             $transactionUpdate['timestamps.started_at'] = now();
             $transactionUpdate['timestamps.due_at'] = now()->addHours($durationHours);
+
+            // Set locker box availability to false (occupied)
+            $this->updateBoxAvailability(
+                $transaction->box_reference['station_id'],
+                $transaction->box_reference['box_id'],
+                false
+            );
         }
 
         $transaction->update($transactionUpdate);
@@ -294,6 +322,12 @@ class LockerRentalController extends Controller
                                 'timestamps.started_at' => now(),
                                 'timestamps.due_at' => now()->addHours(2),
                             ]);
+                            // Set locker box availability to false (occupied)
+                            $this->updateBoxAvailability(
+                                $transaction->box_reference['station_id'],
+                                $transaction->box_reference['box_id'],
+                                false
+                            );
                             $payment = $transaction->payments()->first();
                             if ($payment) {
                                 $payment->update([
@@ -305,6 +339,26 @@ class LockerRentalController extends Controller
                     }
                 } catch (\Exception $e) {
                     Log::error('Synchronous check failed: ' . $e->getMessage());
+                }
+            } else {
+                // MOCK MODE: transition to ACTIVE directly
+                $transaction->update([
+                    'status' => 'ACTIVE',
+                    'timestamps.started_at' => now(),
+                    'timestamps.due_at' => now()->addHours(2),
+                ]);
+                // Set locker box availability to false (occupied)
+                $this->updateBoxAvailability(
+                    $transaction->box_reference['station_id'],
+                    $transaction->box_reference['box_id'],
+                    false
+                );
+                $payment = $transaction->payments()->first();
+                if ($payment) {
+                    $payment->update([
+                        'payment_status' => 'SUCCESS',
+                        'paid_at' => now()
+                    ]);
                 }
             }
         }
@@ -319,5 +373,50 @@ class LockerRentalController extends Controller
             'orderId' => $orderId,
             'status' => $status
         ]);
+    }
+
+    /**
+     * Helper untuk mengubah status ketersediaan locker box di database secara aman.
+     */
+    private function updateBoxAvailability($stationId, $boxId, $isAvailable)
+    {
+        // Konversi stationId ke string jika berupa array (seperti ['$oid' => '...']) atau objek ObjectId
+        $stationIdStr = null;
+        if (is_array($stationId)) {
+            $stationIdStr = $stationId['$oid'] ?? (string)($stationId[0] ?? '');
+        } else {
+            $stationIdStr = (string)$stationId;
+        }
+
+        // Konversi boxId ke string jika berupa array (seperti ['$oid' => '...']) atau objek ObjectId
+        $boxIdStr = null;
+        if (is_array($boxId)) {
+            $boxIdStr = $boxId['$oid'] ?? (string)($boxId[0] ?? '');
+        } else {
+            $boxIdStr = (string)$boxId;
+        }
+
+        try {
+            $station = \App\Models\LockerStation::find($stationIdStr);
+            if ($station) {
+                $boxes = $station->boxes;
+                $updated = false;
+                foreach ($boxes as $box) {
+                    if ($box->box_id == $boxIdStr) {
+                        $box->is_available = (bool)$isAvailable;
+                        $updated = true;
+                    }
+                }
+                if ($updated) {
+                    $station->boxes = $boxes;
+                    $station->save();
+                    Log::info("Box {$boxIdStr} availability set to " . ($isAvailable ? 'true' : 'false'));
+                }
+            } else {
+                Log::warning("LockerStation {$stationIdStr} not found for updating box availability.");
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to update box availability: " . $e->getMessage());
+        }
     }
 }

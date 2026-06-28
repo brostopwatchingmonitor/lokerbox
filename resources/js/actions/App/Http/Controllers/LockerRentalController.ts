@@ -57,7 +57,7 @@ createOrder.form = createOrderForm
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:259
+* @see app/Http/Controllers/LockerRentalController.php:287
 * @route '/api/pickup/{orderId}'
 */
 export const getPickupCode = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -72,7 +72,7 @@ getPickupCode.definition = {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:259
+* @see app/Http/Controllers/LockerRentalController.php:287
 * @route '/api/pickup/{orderId}'
 */
 getPickupCode.url = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -99,7 +99,7 @@ getPickupCode.url = (args: { orderId: string | number } | [orderId: string | num
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:259
+* @see app/Http/Controllers/LockerRentalController.php:287
 * @route '/api/pickup/{orderId}'
 */
 getPickupCode.get = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -109,7 +109,7 @@ getPickupCode.get = (args: { orderId: string | number } | [orderId: string | num
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:259
+* @see app/Http/Controllers/LockerRentalController.php:287
 * @route '/api/pickup/{orderId}'
 */
 getPickupCode.head = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -119,7 +119,7 @@ getPickupCode.head = (args: { orderId: string | number } | [orderId: string | nu
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:259
+* @see app/Http/Controllers/LockerRentalController.php:287
 * @route '/api/pickup/{orderId}'
 */
 const getPickupCodeForm = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -129,7 +129,7 @@ const getPickupCodeForm = (args: { orderId: string | number } | [orderId: string
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:259
+* @see app/Http/Controllers/LockerRentalController.php:287
 * @route '/api/pickup/{orderId}'
 */
 getPickupCodeForm.get = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -139,7 +139,7 @@ getPickupCodeForm.get = (args: { orderId: string | number } | [orderId: string |
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::getPickupCode
-* @see app/Http/Controllers/LockerRentalController.php:259
+* @see app/Http/Controllers/LockerRentalController.php:287
 * @route '/api/pickup/{orderId}'
 */
 getPickupCodeForm.head = (args: { orderId: string | number } | [orderId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -156,7 +156,7 @@ getPickupCode.form = getPickupCodeForm
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:153
+* @see app/Http/Controllers/LockerRentalController.php:174
 * @route '/api/webhook'
 */
 export const handleNotification = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -171,7 +171,7 @@ handleNotification.definition = {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:153
+* @see app/Http/Controllers/LockerRentalController.php:174
 * @route '/api/webhook'
 */
 handleNotification.url = (options?: RouteQueryOptions) => {
@@ -180,7 +180,7 @@ handleNotification.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:153
+* @see app/Http/Controllers/LockerRentalController.php:174
 * @route '/api/webhook'
 */
 handleNotification.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -190,7 +190,7 @@ handleNotification.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:153
+* @see app/Http/Controllers/LockerRentalController.php:174
 * @route '/api/webhook'
 */
 const handleNotificationForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -200,7 +200,7 @@ const handleNotificationForm = (options?: RouteQueryOptions): RouteFormDefinitio
 
 /**
 * @see \App\Http\Controllers\LockerRentalController::handleNotification
-* @see app/Http/Controllers/LockerRentalController.php:153
+* @see app/Http/Controllers/LockerRentalController.php:174
 * @route '/api/webhook'
 */
 handleNotificationForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
