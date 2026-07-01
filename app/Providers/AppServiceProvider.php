@@ -17,7 +17,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(\App\Repositories\TransactionRepositoryInterface::class, \App\Repositories\TransactionRepository::class);
+        $this->app->singleton(\App\Repositories\LockerStationRepositoryInterface::class, \App\Repositories\LockerStationRepository::class);
+        $this->app->singleton(\App\Services\Payment\MidtransServiceInterface::class, \App\Services\Payment\MidtransService::class);
+        $this->app->singleton(\App\Services\IoT\ESP32ServiceInterface::class, \App\Services\IoT\ESP32Service::class);
+        $this->app->singleton(\App\Services\LockerRentalService::class);
     }
 
     /**

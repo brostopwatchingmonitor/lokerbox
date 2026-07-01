@@ -26,6 +26,10 @@ export default function Dashboard() {
     const [error, setError] = useState<string>('');
     const [success, setSuccess] = useState<string>('');
     const [nfcTapped, setNfcTapped] = useState<boolean>(false);
+    const [cardUid, setCardUid] = useState<string>('');
+    const [registeredCard, setRegisteredCard] = useState<string>('');
+    const [isRegisteringCard, setIsRegisteringCard] = useState<boolean>(false);
+    const [tapCardUid, setTapCardUid] = useState<string>('');
 
     // Konfigurasi Tarif
     const sizes = [
@@ -72,6 +76,9 @@ export default function Dashboard() {
         setOrderId('');
         setPickupCode('');
         setNfcTapped(false);
+        setCardUid('');
+        setRegisteredCard('');
+        setTapCardUid('');
         setError('');
         setSuccess('');
         setStep(1);
@@ -159,6 +166,10 @@ export default function Dashboard() {
 
             if (result.success) {
                 setPickupCode(result.pickup_code);
+                if (result.card_uid) {
+                    setRegisteredCard(result.card_uid);
+                    setTapCardUid(result.card_uid);
+                }
             }
         } catch (err) {
             setLoading(false);
@@ -168,14 +179,91 @@ export default function Dashboard() {
         }
     };
 
-    const simulateNfcTap = () => {
+    const registerCard = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!cardUid.trim()) {
+            setError('Card ID RFID tidak boleh kosong.');
+            return;
+        }
+
+        setIsRegisteringCard(true);
+        setError('');
+        setSuccess('');
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const response = await fetch('/api/register-card', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    orderId,
+                    cardUid,
+                }),
+            });
+
+            const result = await response.json();
+            setIsRegisteringCard(false);
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Gagal mendaftarkan kartu.');
+            }
+
+            setRegisteredCard(result.card_uid);
+            setTapCardUid(result.card_uid); // Autofill in simulation
+            setSuccess('Kartu RFID berhasil didaftarkan!');
+        } catch (err: any) {
+            setIsRegisteringCard(false);
+            setError(err.message || 'Gagal mendaftarkan kartu.');
+        }
+    };
+
+    const simulateNfcTap = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const uidToTap = tapCardUid.trim() || registeredCard || '1A2B3C4D';
+        if (!uidToTap) {
+            setError('Masukkan Card ID RFID yang akan ditap.');
+            return;
+        }
+
         setLoading(true);
-        setLoadingText('Membaca NFC Card...');
-        setTimeout(() => {
+        setLoadingText('Mengirim sinyal tap RFID ke server...');
+        setError('');
+        setSuccess('');
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const response = await fetch('/api/arduino/tap-card', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    uid: uidToTap,
+                    ldr_value: 350,
+                }),
+            });
+
+            const result = await response.json();
             setLoading(false);
-            setNfcTapped(true);
-            setSuccess('Kunci Loker Terdaftar! Silakan ambil barang Anda.');
-        }, 1500);
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal memproses tap RFID.');
+            }
+
+            if (result.unlock) {
+                setNfcTapped(true);
+                setSuccess(result.message || 'Akses disetujui. Pintu loker terbuka!');
+            } else {
+                setError(result.message || 'Akses ditolak.');
+            }
+        } catch (err: any) {
+            setLoading(false);
+            setError('Gagal mensimulasikan tap RFID: ' + err.message);
+        }
     };
 
     return (
@@ -398,35 +486,97 @@ export default function Dashboard() {
                             )}
                         </div>
 
-                        {/* Simulasi Sensor IoT Tap Kartu NFC */}
-                        <div className={`rounded-xl border-2 border-dashed p-6 transition-all duration-300 ${
-                            nfcTapped 
-                                ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' 
-                                : 'border-indigo-300 bg-indigo-50/50 dark:bg-indigo-950/20'
-                        }`}>
-                            {!nfcTapped ? (
-                                <div className="flex flex-col items-center">
-                                    <div className="text-4xl mb-2 animate-bounce">📲</div>
-                                    <h4 className="font-bold text-sm text-indigo-800 dark:text-indigo-400">Pendaftaran Kartu NFC</h4>
-                                    <p className="text-xs text-muted-foreground mt-1 max-w-[280px] mx-auto">
-                                        Silakan dekatkan kartu fisik NFC Anda ke alat pemindai loker untuk mendaftarkan kunci akses.
-                                    </p>
-                                    <button 
-                                        onClick={simulateNfcTap}
-                                        className="mt-4 rounded-lg bg-indigo-600 px-5 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition"
-                                    >
-                                        Simulasikan Tap Kartu NFC 💳
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center">
-                                    <div className="text-4xl mb-2 text-green-500">🔓</div>
-                                    <h4 className="font-bold text-sm text-green-800 dark:text-green-400">Pendaftaran Sukses!</h4>
-                                    <p className="text-xs text-muted-foreground mt-1 max-w-[280px] mx-auto">
-                                        Kartu NFC berhasil didaftarkan sebagai kunci pembuka loker. Pintu loker kini tidak terkunci.
-                                    </p>
-                                </div>
-                            )}
+                        {/* Simulasi RFID & ESP32 Hardware */}
+                        <div className="space-y-4 text-left">
+                            {/* Pendaftaran Kartu RFID */}
+                            <div className="rounded-xl border bg-card p-4 shadow-sm">
+                                <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                                    💳 Pendaftaran Kartu RFID
+                                </h3>
+                                <p className="text-xs text-muted-foreground mt-1 mb-3">
+                                    Daftarkan ID kartu RFID fisik atau virtual Anda untuk mengamankan akses loker ini.
+                                </p>
+                                
+                                {registeredCard ? (
+                                    <div className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 p-3">
+                                        <div className="text-xs">
+                                            <span className="text-muted-foreground">ID Kartu Terdaftar: </span>
+                                            <span className="font-bold text-green-700 dark:text-green-400">{registeredCard}</span>
+                                        </div>
+                                        <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
+                                            ✓ Siap Ditap
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={registerCard} className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={cardUid}
+                                            onChange={(e) => setCardUid(e.target.value)}
+                                            placeholder="Masukkan Card ID (contoh: 1A2B3C4D)"
+                                            className="flex-1 rounded-lg border bg-background px-3 py-1.5 text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                                            disabled={isRegisteringCard}
+                                        />
+                                        <button
+                                            type="submit"
+                                            className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition"
+                                            disabled={isRegisteringCard}
+                                        >
+                                            {isRegisteringCard ? 'Menyimpan...' : 'Daftarkan'}
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+
+                            {/* Simulasi Sensor IoT Tap Kartu RFID */}
+                            <div className={`rounded-xl border border-dashed p-4 transition-all duration-300 ${
+                                nfcTapped 
+                                    ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' 
+                                    : 'border-indigo-300 bg-indigo-50/50 dark:bg-indigo-950/20'
+                            }`}>
+                                {!nfcTapped ? (
+                                    <div>
+                                        <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                                            📲 Simulasi Sensor IoT (Solenoid Lock)
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground mt-1 mb-3">
+                                            Simulasikan pembacaan RFID reader pada ESP32 untuk mengirim sinyal unlock ke solenoid loker.
+                                        </p>
+                                        
+                                        <form onSubmit={simulateNfcTap} className="space-y-3">
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={tapCardUid}
+                                                    onChange={(e) => setTapCardUid(e.target.value)}
+                                                    placeholder="ID Kartu untuk Ditap (contoh: 1A2B3C4D)"
+                                                    className="flex-1 rounded-lg border bg-background px-3 py-1.5 text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition"
+                                                >
+                                                    Simulasikan Tap RFID 💳
+                                                </button>
+                                            </div>
+                                            <div className="text-[10px] text-muted-foreground flex gap-2 justify-between">
+                                                <span>Kartu Uji Coba: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">1A2B3C4D</code></span>
+                                                {registeredCard && (
+                                                    <span>Kartu Anda: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">{registeredCard}</code></span>
+                                                )}
+                                            </div>
+                                        </form>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center py-4 text-center">
+                                        <div className="text-4xl mb-2 text-green-500 animate-pulse">🔓</div>
+                                        <h4 className="font-bold text-sm text-green-800 dark:text-green-400">Solenoid Loker Terbuka!</h4>
+                                        <p className="text-xs text-muted-foreground mt-1 max-w-[280px] mx-auto">
+                                            Sinyal unlock sukses disimulasikan ke ESP32. Pintu loker terbuka, silakan ambil/masukkan barang.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <button

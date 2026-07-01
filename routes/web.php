@@ -11,6 +11,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // API Loker Pembayaran & Order
     Route::post('/api/create-order', [LockerRentalController::class, 'createOrder'])->name('locker.create-order');
     Route::get('/api/pickup/{orderId}', [LockerRentalController::class, 'getPickupCode'])->name('locker.pickup');
+    Route::post('/api/register-card', [LockerRentalController::class, 'registerCard'])->name('locker.register-card');
 });
 
 // Callback Webhook Notifikasi Midtrans (Publik & CSRF dikecualikan di bootstrap/app.php)
