@@ -125,4 +125,47 @@ class LockerRentalController extends Controller
 
         return response()->json($result);
     }
+
+    /**
+     * Retrieve borrowing history, statistics, and active rental status.
+     */
+    public function getHistory(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'User tidak terotentikasi.'
+            ], 401);
+        }
+
+        $result = $this->lockerRentalService->getHistory($user);
+        return response()->json($result);
+    }
+
+    /**
+     * Emergency reopen active locker if registration fails or card is missing.
+     */
+    public function reopenLocker(Request $request): JsonResponse
+    {
+        $request->validate([
+            'orderId' => 'required|string',
+        ]);
+
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'User tidak terotentikasi.'
+            ], 401);
+        }
+
+        $result = $this->lockerRentalService->reopenLocker($user, $request->orderId);
+
+        if (!$result['success']) {
+            return response()->json($result, 400);
+        }
+
+        return response()->json($result);
+    }
 }

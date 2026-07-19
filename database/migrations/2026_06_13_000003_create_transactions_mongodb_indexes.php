@@ -8,9 +8,6 @@ return new class extends Migration
 {
     protected $connection = 'mongodb';
 
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::connection($this->connection)->table('transactions', function (Blueprint $collection) {
@@ -19,6 +16,12 @@ return new class extends Migration
                 'parties.owner_id' => 1,
                 'status' => 1,
             ], 'user_transactions_status_index');
+
+            // Indeks pencarian transaksi berdasarkan kode referensi pembayaran gateway
+            $collection->index('payments.gateway_ref');
+
+            // Indeks pencarian RFID card UID aktif untuk akses loker
+            $collection->index('card_uid');
         });
     }
 
@@ -29,6 +32,8 @@ return new class extends Migration
     {
         Schema::connection($this->connection)->table('transactions', function (Blueprint $collection) {
             $collection->dropIndex('user_transactions_status_index');
+            $collection->dropIndex(['payments.gateway_ref']);
+            $collection->dropIndex(['card_uid']);
         });
     }
 };

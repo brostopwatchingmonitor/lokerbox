@@ -15,15 +15,18 @@ class LockerRentalService
     protected TransactionRepositoryInterface $transactionRepository;
     protected LockerStationRepositoryInterface $stationRepository;
     protected MidtransServiceInterface $midtransService;
+    protected \App\Services\IoT\ESP32ServiceInterface $esp32Service;
 
     public function __construct(
         TransactionRepositoryInterface $transactionRepository,
         LockerStationRepositoryInterface $stationRepository,
-        MidtransServiceInterface $midtransService
+        MidtransServiceInterface $midtransService,
+        \App\Services\IoT\ESP32ServiceInterface $esp32Service
     ) {
         $this->transactionRepository = $transactionRepository;
         $this->stationRepository = $stationRepository;
         $this->midtransService = $midtransService;
+        $this->esp32Service = $esp32Service;
     }
 
     /**
@@ -59,6 +62,7 @@ class LockerRentalService
                     'base_fee' => (float)$price,
                     'penalty_fee' => 0.00,
                     'total_fee' => (float)$totalPrice,
+                    'duration' => (int)$duration,
                 ],
                 'timestamps' => [
                     'created_at' => now(),
@@ -154,14 +158,16 @@ class LockerRentalService
         ];
 
         if ($isPaid) {
-            $durationHours = 2; // Default rent duration
-            $transactionUpdate['timestamps.started_at'] = now();
-            $transactionUpdate['timestamps.due_at'] = now()->addHours($durationHours);
+            $durationHours = isset($transaction->fees['duration']) ? (int)$transaction->fees['duration'] : 2;
+            $timestamps = $transaction->getAttribute('timestamps') ?? [];
+            $timestamps['started_at'] = now();
+            $timestamps['due_at'] = now()->addHours($durationHours);
+            $transactionUpdate['timestamps'] = $timestamps;
 
             // Reserve the locker box (set availability to false)
             $this->stationRepository->updateBoxAvailability(
-                $transaction->box_reference['station_id'],
-                $transaction->box_reference['box_id'],
+                $this->resolveObjectIdString($transaction->box_reference['station_id']),
+                $this->resolveObjectIdString($transaction->box_reference['box_id']),
                 false
             );
         }
@@ -224,15 +230,18 @@ class LockerRentalService
                 $statusMapping = $this->midtransService->mapTransactionStatus($txStatus, $fraudStatus, $paymentType);
                 
                 if ($statusMapping['is_paid']) {
+                    $timestamps = $transaction->getAttribute('timestamps') ?? [];
+                    $timestamps['started_at'] = now();
+                    $durationHours = isset($transaction->fees['duration']) ? (int)$transaction->fees['duration'] : 2;
+                    $timestamps['due_at'] = now()->addHours($durationHours);
                     $this->transactionRepository->updateTransaction($transaction, [
                         'status' => 'ACTIVE',
-                        'timestamps.started_at' => now(),
-                        'timestamps.due_at' => now()->addHours(2),
+                        'timestamps' => $timestamps,
                     ]);
 
                     $this->stationRepository->updateBoxAvailability(
-                        $transaction->box_reference['station_id'],
-                        $transaction->box_reference['box_id'],
+                        $this->resolveObjectIdString($transaction->box_reference['station_id']),
+                        $this->resolveObjectIdString($transaction->box_reference['box_id']),
                         false
                     );
 
@@ -246,15 +255,18 @@ class LockerRentalService
                 }
             } else if ($this->midtransService->isMockMode()) {
                 // Auto active in Mock Mode if status checks triggered
+                $timestamps = $transaction->getAttribute('timestamps') ?? [];
+                $timestamps['started_at'] = now();
+                $durationHours = isset($transaction->fees['duration']) ? (int)$transaction->fees['duration'] : 2;
+                $timestamps['due_at'] = now()->addHours($durationHours);
                 $this->transactionRepository->updateTransaction($transaction, [
                     'status' => 'ACTIVE',
-                    'timestamps.started_at' => now(),
-                    'timestamps.due_at' => now()->addHours(2),
+                    'timestamps' => $timestamps,
                 ]);
 
                 $this->stationRepository->updateBoxAvailability(
-                    $transaction->box_reference['station_id'],
-                    $transaction->box_reference['box_id'],
+                    $this->resolveObjectIdString($transaction->box_reference['station_id']),
+                    $this->resolveObjectIdString($transaction->box_reference['box_id']),
                     false
                 );
 
@@ -319,5 +331,210 @@ class LockerRentalService
             'message' => 'Kartu RFID berhasil didaftarkan.',
             'card_uid' => $cardUid,
         ];
+    }
+
+    /**
+     * Get transaction history for user, active rental and statistics.
+     */
+    public function getHistory(User $user): array
+    {
+        $userId = $user->_id;
+
+        // Fetch all transactions for the user
+        $transactions = \App\Models\Transaction::where('parties.owner_id', new \MongoDB\BSON\ObjectId($userId))
+            ->orderBy('timestamps.created_at', 'desc')
+            ->get();
+
+        $stats = [
+            'total_rentals' => 0,
+            'stations_visited' => 0,
+        ];
+
+        $stations = [];
+        $activeRental = null;
+        $activeRentals = [];
+        $history = [];
+
+        foreach ($transactions as $tx) {
+            $stationId = null;
+            if (isset($tx->box_reference['station_id'])) {
+                $stationId = $this->resolveObjectIdString($tx->box_reference['station_id']);
+                $stations[$stationId] = true;
+            }
+
+            // Exclude pending from stats unless paid
+            if ($tx->status !== 'PENDING') {
+                $stats['total_rentals']++;
+            }
+
+            // Get station name
+            $stationName = 'Station';
+            if ($stationId) {
+                $stationModel = \App\Models\LockerStation::find($stationId);
+                if ($stationModel) {
+                    $stationName = $stationModel->location_name;
+                }
+            }
+
+            $formatted = [
+                'order_id' => $tx->payments()->first()?->gateway_ref ?? $tx->_id,
+                'locker_id' => isset($tx->box_reference['box_id']) ? 'Locker' : 'Unknown',
+                'station_name' => $stationName,
+                'created_at' => is_array($tx->getAttribute('timestamps')) && isset($tx->getAttribute('timestamps')['created_at']) ? \Illuminate\Support\Carbon::parse($tx->getAttribute('timestamps')['created_at'])->format('Y-m-d H:i') : null,
+                'status' => $tx->status,
+                'card_uid' => $tx->card_uid ?? null,
+            ];
+
+            // Resolve box size/number if possible
+            if (isset($tx->box_reference['box_id']) && $stationId) {
+                $stationModel = \App\Models\LockerStation::find($stationId);
+                if ($stationModel) {
+                    foreach ($stationModel->boxes as $box) {
+                        if ((string)$box->box_id === $this->resolveObjectIdString($tx->box_reference['box_id'])) {
+                            $formatted['locker_id'] = 'Locker ' . ($box->size_type === 'LARGE' ? 'Large' : 'Small') . ' #' . $box->box_number;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($tx->status === 'ACTIVE') {
+                $dueAt = is_array($tx->getAttribute('timestamps')) && isset($tx->getAttribute('timestamps')['due_at']) ? \Illuminate\Support\Carbon::parse($tx->getAttribute('timestamps')['due_at']) : null;
+                $remainingSeconds = $dueAt ? max(0, now()->diffInSeconds($dueAt, false)) : 0;
+                
+                $activeRentals[] = [
+                    'order_id' => $formatted['order_id'],
+                    'locker_id' => $formatted['locker_id'],
+                    'station_name' => $formatted['station_name'],
+                    'card_uid' => $tx->card_uid ?? null,
+                    'remaining_seconds' => $remainingSeconds,
+                    'due_at' => $dueAt ? $dueAt->toIso8601String() : null,
+                ];
+            } else {
+                $history[] = $formatted;
+            }
+        }
+
+        // Keep activeRental for backward compatibility
+        $activeRental = count($activeRentals) > 0 ? $activeRentals[0] : null;
+
+        $stats['stations_visited'] = count($stations);
+
+        return [
+            'success' => true,
+            'stats' => $stats,
+            'active_rental' => $activeRental,
+            'active_rentals' => $activeRentals,
+            'history' => $history,
+        ];
+    }
+
+    /**
+     * Emergency reopen a locker for an active rental if no card is registered.
+     */
+    public function reopenLocker(User $user, string $orderId): array
+    {
+        $transaction = $this->transactionRepository->findByGatewayRef($orderId);
+
+        if (!$transaction) {
+            return [
+                'success' => false,
+                'error' => 'Transaksi sewa loker tidak ditemukan.',
+            ];
+        }
+
+        // Verify ownership
+        if ((string)$transaction->parties['owner_id'] !== (string)$user->_id) {
+            return [
+                'success' => false,
+                'error' => 'Anda tidak memiliki akses ke loker ini.',
+            ];
+        }
+
+        // Verify active status
+        if ($transaction->status !== 'ACTIVE') {
+            return [
+                'success' => false,
+                'error' => 'Loker tidak dalam status aktif.',
+            ];
+        }
+
+        // Fetch station and box
+        $stationId = $this->resolveObjectIdString($transaction->box_reference['station_id'] ?? '');
+        $boxId = $this->resolveObjectIdString($transaction->box_reference['box_id'] ?? '');
+        $boxNumber = 1;
+
+        try {
+            $station = \App\Models\LockerStation::find($stationId);
+            if ($station) {
+                foreach ($station->boxes as $box) {
+                    if ((string)$box->box_id === $boxId) {
+                        $boxNumber = $box->box_number;
+                        break;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning("LockerRentalService: Error fetching box number for reopen: " . $e->getMessage());
+        }
+
+        // Trigger physical solenoid open via IoT service
+        $unlocked = $this->esp32Service->sendUnlockSignal($stationId, $boxNumber);
+
+        if (!$unlocked) {
+            return [
+                'success' => false,
+                'error' => 'Gagal membuka loker secara remote.',
+            ];
+        }
+
+        // Log the activity
+        $transaction->activityLogs()->create([
+            'log_id' => new ObjectId(),
+            'actor_id' => $user->_id,
+            'event_name' => 'EMERGENCY_REOPEN',
+            'description' => 'Loker dibuka kembali secara darurat via aplikasi (tanpa kartu RFID).',
+            'logged_at' => now(),
+        ]);
+
+        // Complete the transaction
+        $timestamps = $transaction->getAttribute('timestamps') ?? [];
+        $timestamps['ended_at'] = now();
+        $this->transactionRepository->updateTransaction($transaction, [
+            'status' => 'COMPLETED',
+            'timestamps' => $timestamps,
+        ]);
+
+        // Free the locker box
+        $this->stationRepository->updateBoxAvailability(
+            $stationId,
+            $boxId,
+            true
+        );
+
+        return [
+            'success' => true,
+            'message' => 'Sinyal darurat berhasil dikirim. Pintu loker terbuka!',
+        ];
+    }
+
+    /**
+     * Helper to resolve MongoDB ObjectId or nested array representation to string.
+     */
+    private function resolveObjectIdString($val): string
+    {
+        if (is_string($val)) {
+            return $val;
+        }
+        if (is_object($val)) {
+            return (string)$val;
+        }
+        if (is_array($val)) {
+            if (isset($val['$oid'])) {
+                return (string)$val['$oid'];
+            }
+            return (string)reset($val);
+        }
+        return (string)$val;
     }
 }

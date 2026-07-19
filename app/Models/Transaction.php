@@ -28,13 +28,10 @@ class Transaction extends Model
         'status',             // PENDING, ACTIVE, COMPLETED, CANCELLED, OVERDUE
         'fees',               // ['base_fee' => decimal, 'penalty_fee' => decimal, 'total_fee' => decimal]
         'timestamps',         // ['created_at' => Date, 'started_at' => Date|null, 'due_at' => Date|null, 'ended_at' => Date|null]
+        'card_uid',           // RFID Card ID registered as a locker key
     ];
 
     protected $casts = [
-        'box_reference' => 'array',
-        'parties' => 'array',
-        'fees' => 'array',
-        'timestamps' => 'array',
     ];
 
     // --- Relasi Referensi (References) ---

@@ -12,6 +12,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/api/create-order', [LockerRentalController::class, 'createOrder'])->name('locker.create-order');
     Route::get('/api/pickup/{orderId}', [LockerRentalController::class, 'getPickupCode'])->name('locker.pickup');
     Route::post('/api/register-card', [LockerRentalController::class, 'registerCard'])->name('locker.register-card');
+    Route::get('/api/rentals/history', [LockerRentalController::class, 'getHistory'])->name('locker.history');
+    Route::post('/api/rentals/reopen', [LockerRentalController::class, 'reopenLocker'])->name('locker.reopen');
 });
 
 // Callback Webhook Notifikasi Midtrans (Publik & CSRF dikecualikan di bootstrap/app.php)

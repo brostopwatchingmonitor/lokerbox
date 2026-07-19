@@ -211,6 +211,143 @@ registerCardForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post
 registerCard.form = registerCardForm
 
 /**
+* @see \App\Http\Controllers\LockerRentalController::history
+* @see app/Http/Controllers/LockerRentalController.php:132
+* @route '/api/rentals/history'
+*/
+export const history = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: history.url(options),
+    method: 'get',
+})
+
+history.definition = {
+    methods: ["get","head"],
+    url: '/api/rentals/history',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::history
+* @see app/Http/Controllers/LockerRentalController.php:132
+* @route '/api/rentals/history'
+*/
+history.url = (options?: RouteQueryOptions) => {
+    return history.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::history
+* @see app/Http/Controllers/LockerRentalController.php:132
+* @route '/api/rentals/history'
+*/
+history.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: history.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::history
+* @see app/Http/Controllers/LockerRentalController.php:132
+* @route '/api/rentals/history'
+*/
+history.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: history.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::history
+* @see app/Http/Controllers/LockerRentalController.php:132
+* @route '/api/rentals/history'
+*/
+const historyForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: history.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::history
+* @see app/Http/Controllers/LockerRentalController.php:132
+* @route '/api/rentals/history'
+*/
+historyForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: history.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::history
+* @see app/Http/Controllers/LockerRentalController.php:132
+* @route '/api/rentals/history'
+*/
+historyForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: history.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+history.form = historyForm
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::reopen
+* @see app/Http/Controllers/LockerRentalController.php:149
+* @route '/api/rentals/reopen'
+*/
+export const reopen = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: reopen.url(options),
+    method: 'post',
+})
+
+reopen.definition = {
+    methods: ["post"],
+    url: '/api/rentals/reopen',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::reopen
+* @see app/Http/Controllers/LockerRentalController.php:149
+* @route '/api/rentals/reopen'
+*/
+reopen.url = (options?: RouteQueryOptions) => {
+    return reopen.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::reopen
+* @see app/Http/Controllers/LockerRentalController.php:149
+* @route '/api/rentals/reopen'
+*/
+reopen.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: reopen.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::reopen
+* @see app/Http/Controllers/LockerRentalController.php:149
+* @route '/api/rentals/reopen'
+*/
+const reopenForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: reopen.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\LockerRentalController::reopen
+* @see app/Http/Controllers/LockerRentalController.php:149
+* @route '/api/rentals/reopen'
+*/
+reopenForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: reopen.url(options),
+    method: 'post',
+})
+
+reopen.form = reopenForm
+
+/**
 * @see \App\Http\Controllers\LockerRentalController::paymentCallback
 * @see app/Http/Controllers/LockerRentalController.php:61
 * @route '/api/webhook'
@@ -326,6 +463,8 @@ const locker = {
     createOrder: Object.assign(createOrder, createOrder),
     pickup: Object.assign(pickup, pickup),
     registerCard: Object.assign(registerCard, registerCard),
+    history: Object.assign(history, history),
+    reopen: Object.assign(reopen, reopen),
     paymentCallback: Object.assign(paymentCallback, paymentCallback),
     arduinoTap: Object.assign(arduinoTap, arduinoTap),
 }

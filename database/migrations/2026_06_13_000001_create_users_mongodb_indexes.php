@@ -8,14 +8,10 @@ return new class extends Migration
 {
     protected $connection = 'mongodb';
 
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::connection($this->connection)->table('users', function (Blueprint $collection) {
             $collection->unique('email');
-            $collection->unique('account_code');
         });
     }
 
@@ -26,7 +22,6 @@ return new class extends Migration
     {
         Schema::connection($this->connection)->table('users', function (Blueprint $collection) {
             $collection->dropUnique(['email']);
-            $collection->dropUnique(['account_code']);
         });
     }
 };
